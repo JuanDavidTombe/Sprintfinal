@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Order extends Model
+{
+    use HasFactory;
+
+    // Llenado de CRUDs: campos permitidos para crear y actualizar pedidos en la tabla orders
+    protected $fillable = [
+        'route_id',
+        'driver_id',
+        'destination',
+        'latitude',
+        'longitude',
+        'client_name',
+        'status',
+        'payment_method',
+        'payment_status',
+        'otp_code',
+        'amount',
+        'received_amount',
+        'change_due',
+        'is_bank_reconciled',
+        'bank_name',
+        'bank_reference',
+        'bank_fee',
+        'reconciled_at',
+        'reconciled_by',
+        'credit_days',
+        'contingency',
+        'contingency_reason',
+    ];
+
+    // Relaciones del modelo (igual que en adminSena): un pedido pertenece a una ruta, un conductor y puede tener novedades
+    public function route()
+    {
+        return $this->belongsTo(Route::class);
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'driver_id');
+    }
+
+    public function reconciledBy()
+    {
+        return $this->belongsTo(User::class, 'reconciled_by');
+    }
+
+    public function incidents()
+    {
+        return $this->hasMany(DeliveryIncident::class);
+    }
+
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'received_amount' => 'decimal:2',
+        'change_due' => 'decimal:2',
+        'bank_fee' => 'decimal:2',
+        'is_bank_reconciled' => 'boolean',
+        'reconciled_at' => 'datetime',
+        'contingency' => 'boolean',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+    ];
+
+    protected $appends = ['payment_status_label', 'status_label'];
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'pending' => 'Pendiente',
+            'assigned' => 'Asignado',
+            'in_transit' => 'En Tránsito',
+            'delivered' => 'Entregado',
+            'cancelled' => 'Cancelado',
+            default => ucfirst((string) $this->status),
+        };
+    }
+
+    public function getPaymentStatusLabelAttribute(): string
+    {
+        return match ($this->payment_status) {
+            'pending' => 'Pendiente',
+            'confirmed' => 'Confirmado',
+            'completed' => 'Completado',
+            'refunded' => 'Reembolsado',
+            default => ucfirst($this->payment_status),
+        };
+    }
+}
